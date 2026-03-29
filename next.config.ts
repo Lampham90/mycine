@@ -12,5 +12,3 @@ const nextConfig: NextConfig = {
     unoptimized: true, // Bắt buộc nếu dùng Cloudflare Pages
   },
 };
-
-export default nextConfig;
