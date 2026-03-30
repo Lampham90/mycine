@@ -8,8 +8,11 @@ import { Montserrat } from 'next/font/google';
 const montserrat = Montserrat({ subsets: ['vietnamese'], weight: ['400', '700', '900'] });
 
 export const metadata: Metadata = {
-  title: "CineVip - Cinema Experience",
-  description: "Hệ thống xem phim đẳng cấp, trải nghiệm điện ảnh 4K",
+  title: "MyCine - Project Phim Cá Nhân", // Đổi tên bớt "kêu" để tránh bị quét nhầm là web lậu quy mô lớn
+  description: "Trang web học tập về lập trình và trải nghiệm trình phát video m3u8",
+  verification: {
+    google: "googlefbc84cd2aca112c0", // Thêm dòng này để xác minh dự phòng bằng thẻ Meta
+  },
 };
 
 export default function RootLayout({
