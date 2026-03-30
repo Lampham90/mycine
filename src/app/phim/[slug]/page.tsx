@@ -57,6 +57,34 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
   const [openSeason, setOpenSeason] = useState(false);
   const [openAudio, setOpenAudio] = useState(false);
 
+  // --- LOGIC YÊU THÍCH (THÊM MỚI) ---
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    const favs = JSON.parse(localStorage.getItem("movie_favorites") || "[]");
+    setIsFavorite(favs.some((item: any) => item.slug === slug));
+  }, [slug]);
+
+  const toggleFavorite = () => {
+    const favs = JSON.parse(localStorage.getItem("movie_favorites") || "[]");
+    if (isFavorite) {
+      const newFavs = favs.filter((item: any) => item.slug !== slug);
+      localStorage.setItem("movie_favorites", JSON.stringify(newFavs));
+      setIsFavorite(false);
+    } else {
+      const newData = { 
+        slug, 
+        name: movie.name, 
+        thumb_url: movie.thumb_url, 
+        poster_url: movie.poster_url,
+        year: movie.year 
+      };
+      favs.push(newData);
+      localStorage.setItem("movie_favorites", JSON.stringify(favs));
+      setIsFavorite(true);
+    }
+  };
+
   // --- HỆ THỐNG ĐIỀU KHIỂN ĐA NỀN TẢNG (PC & ANDROID TV) ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,7 +92,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
       const video = videoRef.current;
       const code = e.code;
 
-      // 1. Play/Pause (Space trên PC, Enter/Select/OK trên TV)
       if (code === "Space" || code === "Enter" || code === "NumpadEnter") {
         if (isPlaying) {
           e.preventDefault();
@@ -73,7 +100,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
         }
       }
 
-      // 2. Tiến/Lùi 10s (Arrow Right/Left)
       if (code === "ArrowRight") {
         if (isPlaying) {
           e.preventDefault();
@@ -86,7 +112,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
         }
       }
 
-      // 3. Phím Thoát (Escape trên PC, Back trên Remote TV)
       if (code === "Escape" || code === "BrowserBack") {
         if (isPlaying) {
           e.preventDefault();
@@ -117,7 +142,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
     }
   }, [currentEpIndex, servers, activeServer, saveProgress]);
 
-  // Đổi Server an toàn (Tránh index undefined)
   const handleServerChange = (idx: number) => {
     setActiveServer(idx);
     setOpenAudio(false);
@@ -179,13 +203,10 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
 
         if (item) {
           setMovie(item);
-          
-          // Chỉ fetch Season một lần duy nhất
           if (!seasonsLoaded) {
             const getBaseSlug = (s: string) => s.split(/-(phan|season|ss|part|tap|p|s|live-action)-\d+|-\d+$/i)[0];
             const baseSlug = getBaseSlug(slug);
             const baseName = item.name.split(/phần|season|ss|part|tập/i)[0].trim();
-
             const sRes = await fetch(`${worker}/v1/api/tim-kiem?keyword=${encodeURIComponent(baseName)}&limit=20`);
             const sJson = await sRes.json();
             if (sJson?.data?.items) {
@@ -197,7 +218,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
               setSeasonsLoaded(true);
             }
           }
-
           const rawServers = item.episodes || [];
           const sortedServers = [...rawServers].sort((a, b) => {
             const priority = (name: string) => {
@@ -208,7 +228,6 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
             };
             return priority(a.server_name) - priority(b.server_name);
           });
-
           setServers(sortedServers);
           const history = JSON.parse(localStorage.getItem("movie_history") || "{}");
           const saved = history[slug];
@@ -253,9 +272,27 @@ export default function MovieDetail({ params }: { params: Promise<{ slug: string
               <div className="flex items-center gap-3 mb-3"><div className="w-8 h-[2px] bg-red-600"></div><span className="text-[7.5px] font-black uppercase tracking-[0.4em] text-white">Hot Premiere</span></div>
               <h1 className="text-[44px] md:text-[81px] font-black uppercase italic mb-5 leading-[0.9] max-w-5xl tracking-tighter drop-shadow-2xl">{movie?.name}</h1>
               <div className="text-[12px] md:text-[16px] font-medium italic text-white/80 mb-10 leading-relaxed max-w-2xl line-clamp-3" dangerouslySetInnerHTML={{ __html: movie?.content }} />
-              <button onClick={() => setIsPlaying(true)} className="glass-btn w-fit text-white px-9 py-3.5 rounded-full font-black text-[10px] md:text-[12px] uppercase tracking-[0.2em]">
-                {lastWatchedEp !== null ? `Tiếp tục tập ${lastWatchedEp + 1}` : "Xem ngay"}
-              </button>
+              
+              {/* CỤM NÚT ĐIỀU KHIỂN (THÊM NÚT TRÁI TIM) */}
+              <div className="flex items-center gap-4">
+                <button onClick={() => setIsPlaying(true)} className="glass-btn w-fit text-white px-9 py-3.5 rounded-full font-black text-[10px] md:text-[12px] uppercase tracking-[0.2em]">
+                  {lastWatchedEp !== null ? `Tiếp tục tập ${lastWatchedEp + 1}` : "Xem ngay"}
+                </button>
+
+                <button 
+                  onClick={toggleFavorite}
+                  className={`w-12 h-12 md:w-14 md:h-14 rounded-full border-2 flex items-center justify-center transition-all duration-300 group ${
+                    isFavorite 
+                    ? "bg-red-600 border-red-600 text-white shadow-[0_0_20px_rgba(229,9,20,0.5)]" 
+                    : "bg-black/20 border-white/20 text-white hover:border-red-600 hover:text-red-600"
+                  }`}
+                >
+                  <svg className={`w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:scale-125 ${isFavorite ? 'fill-current' : 'fill-none'}`} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
+              </div>
+
             </div>
           </div>
         ) : (
