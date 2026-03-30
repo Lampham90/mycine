@@ -19,7 +19,7 @@ export default function Footer() {
               </h2>
             </Link>
             <p className="text-white/40 text-sm leading-relaxed italic">
-              Trải nghiệm điện ảnh đỉnh cao với chất lượng 4K. Cập nhật những bộ phim mới nhất mỗi ngày.
+              
             </p>
           </div>
 
